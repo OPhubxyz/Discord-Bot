@@ -54,7 +54,7 @@ function ytdlpArgs(extra) {
 
 // Lấy metadata bài hát (tên, URL, tác giả, ảnh bìa) từ SoundCloud
 function getInfo(input) {
-  const target = /^https?:\\/\\//i.test(input) ? input : `scsearch1:${input}`;
+  const target = /^https?:\/\//i.test(input) ? input : `scsearch1:${input}`;
   return new Promise((resolve, reject) => {
     execFile(
       YTDLP_PATH,
@@ -62,7 +62,7 @@ function getInfo(input) {
       { timeout: 45000, maxBuffer: 2 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) {
-          const msg = (stderr || err.message).split("\\n").filter(Boolean).pop();
+          const msg = (stderr || err.message).split("\n").filter(Boolean).pop();
           return reject(new Error(msg));
         }
         try {
@@ -290,10 +290,10 @@ client.on("messageCreate", async (message) => {
     let song;
     const searchingEmbed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setDescription("<:bobsearch:1567556819155419187> **Bob 🐙 đang tìm bài hát...**\\nĐợi Bob một xíu nha <3");
+      .setDescription("<:bobsearch:1567556819155419187> **Bob 🐙 đang tìm bài hát...**\nĐợi Bob một xíu nha <3");
     const searching = await message.reply({ embeds: [searchingEmbed] });
 
-    if (/^https?:\\/\\/\\S+\\.(mp3|ogg|wav|m4a|aac|flac|opus)(\\?\\S*)?$/i.test(query)) {
+    if (/^https?:\/\/\S+\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?\S*)?$/i.test(query)) {
       song = { url: query, title: query, artist: "Không rõ tác giả", thumbnail: null, direct: true, requestedBy };
     } else {
       try {
@@ -303,7 +303,7 @@ client.on("messageCreate", async (message) => {
         console.error("getInfo error:", e.message);
         return searching.edit({ embeds: [new EmbedBuilder()
           .setColor(0xED4245)
-          .setDescription("Bob 🐙 không tìm được bài này ☹️\\nLỗi: " + e.message.slice(0, 300))] });
+          .setDescription("Bob 🐙 không tìm được bài này ☹️\nLỗi: " + e.message.slice(0, 300))] });
       }
     }
 
@@ -315,7 +315,7 @@ client.on("messageCreate", async (message) => {
         { name: "💗 Tim", value: "❤️", inline: true }
       )
       .setFooter({ text: "Bob 🐙 • Yêu cầu bởi " + requestedBy });
-    if (song.thumbnail && /^https?:\\/\\//i.test(song.thumbnail)) {
+    if (song.thumbnail && /^https?:\/\//i.test(song.thumbnail)) {
       resultEmbed.setThumbnail(song.thumbnail);
     }
     await searching.edit({ embeds: [resultEmbed] });
