@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events } = require("discord.js");
+const { Client, GatewayIntentBits, Events, EmbedBuilder } = require("discord.js");
 
 const {
   joinVoiceChannel,
@@ -52,27 +52,31 @@ function ytdlpArgs(extra) {
   return ["--no-playlist", "--no-warnings"].concat(extra);
 }
 
-// Lấy tên + link bài (hỗ trợ cả link và từ khóa tìm kiếm)
+// Lấy metadata bài hát (tên, URL, tác giả, ảnh bìa) từ SoundCloud
 function getInfo(input) {
-  const target = /^https?:\/\//i.test(input) ? input : `scsearch1:${input}`;
+  const target = /^https?:\\/\\//i.test(input) ? input : `scsearch1:${input}`;
   return new Promise((resolve, reject) => {
     execFile(
       YTDLP_PATH,
-      ytdlpArgs([
-        "--print", "%(title)s",
-        "--print", "%(webpage_url)s",
-        "-f", "bestaudio/best",
-        target
-      ]),
-      { timeout: 45000, maxBuffer: 1024 * 1024 },
+      ytdlpArgs(["--dump-single-json", "-f", "bestaudio/best", target]),
+      { timeout: 45000, maxBuffer: 2 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) {
-          const msg = (stderr || err.message).split("\n").filter(Boolean).pop();
+          const msg = (stderr || err.message).split("\\n").filter(Boolean).pop();
           return reject(new Error(msg));
         }
-        const [title, url] = stdout.trim().split("\n");
-        if (!url) return reject(new Error("Không tìm thấy kết quả."));
-        resolve({ title, url });
+        try {
+          const info = JSON.parse(stdout);
+          if (!info.webpage_url) return reject(new Error("Không tìm thấy kết quả."));
+          resolve({
+            title: info.title || "Bài hát không rõ tên",
+            url: info.webpage_url,
+            artist: info.artist || info.creator || info.uploader || "Không rõ tác giả",
+            thumbnail: info.thumbnail || null
+          });
+        } catch (parseError) {
+          reject(new Error("Không đọc được thông tin bài hát."));
+        }
       }
     );
   });
@@ -284,19 +288,38 @@ client.on("messageCreate", async (message) => {
 
     const requestedBy = message.author.username;
     let song;
+    const searchingEmbed = new EmbedBuilder()
+      .setColor(0x5865F2)
+      .setDescription("<:bobsearch:1567556819155419187> **Bob 🐙 đang tìm bài hát...**\\nĐợi Bob một xíu nha <3");
+    const searching = await message.reply({ embeds: [searchingEmbed] });
 
-    if (/^https?:\/\/\S+\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?\S*)?$/i.test(query)) {
-      song = { url: query, title: query, direct: true, requestedBy };
+    if (/^https?:\\/\\/\\S+\\.(mp3|ogg|wav|m4a|aac|flac|opus)(\\?\\S*)?$/i.test(query)) {
+      song = { url: query, title: query, artist: "Không rõ tác giả", thumbnail: null, direct: true, requestedBy };
     } else {
-      const searching = await message.reply("🔎 Bob 🐙 đang tìm bài nè, đợi xíu nha...");
       try {
         const info = await getInfo(query);
-        song = { url: info.url, title: info.title, direct: false, requestedBy };
+        song = { url: info.url, title: info.title, artist: info.artist, thumbnail: info.thumbnail, direct: false, requestedBy };
       } catch (e) {
         console.error("getInfo error:", e.message);
-        return searching.edit("Bob 🐙 không lấy được bài này ☹️ Lỗi: " + e.message.slice(0, 300));
+        return searching.edit({ embeds: [new EmbedBuilder()
+          .setColor(0xED4245)
+          .setDescription("Bob 🐙 không tìm được bài này ☹️\\nLỗi: " + e.message.slice(0, 300))] });
       }
     }
+
+    const resultEmbed = new EmbedBuilder()
+      .setColor(0x57F287)
+      .setTitle("🎵 " + song.title.slice(0, 250))
+      .addFields(
+        { name: "🎤 Tên tác giả", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
+        { name: "💗 Tim", value: "❤️", inline: true }
+      )
+      .setFooter({ text: "Bob 🐙 • Yêu cầu bởi " + requestedBy });
+    if (song.thumbnail && /^https?:\\/\\//i.test(song.thumbnail)) {
+      resultEmbed.setThumbnail(song.thumbnail);
+    }
+    await searching.edit({ embeds: [resultEmbed] });
+    await searching.react("❤️").catch(() => {});
 
     data.queue.push(song);
 
