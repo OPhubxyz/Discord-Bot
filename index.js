@@ -7,7 +7,9 @@ const {
   createAudioResource,
   AudioPlayerStatus,
   NoSubscriberBehavior,
-  StreamType
+  StreamType,
+  VoiceConnectionStatus,
+  generateDependencyReport
 } = require("@discordjs/voice");
 
 const { spawn, execFile } = require("child_process");
@@ -90,6 +92,16 @@ const client = new Client({
 });
 
 const music = new Map();
+
+// Gắn log trạng thái kết nối voice để dễ tìm lỗi
+function watchConnection(conn) {
+  if (conn.__watched) return;
+  conn.__watched = true;
+  conn.on("stateChange", (o, n) => {
+    console.log(`Voice: ${o.status} -> ${n.status}`, n.closeCode ? `(close ${n.closeCode})` : "");
+  });
+  conn.on("error", (e) => console.error("Voice error:", e.message));
+}
 
 function getMusic(guildId) {
   if (!music.has(guildId)) {
@@ -227,6 +239,7 @@ client.on("messageCreate", async (message) => {
       adapterCreator: message.guild.voiceAdapterCreator
     });
 
+    watchConnection(voiceConnection);
     voiceConnection.subscribe(data.player);
     return message.reply(`Đã vào voice: **${memberVoice.name}**`);
   }
@@ -261,6 +274,7 @@ client.on("messageCreate", async (message) => {
         adapterCreator: message.guild.voiceAdapterCreator
       });
 
+      watchConnection(voiceConnection);
       voiceConnection.subscribe(data.player);
     }
 
@@ -377,19 +391,19 @@ client.on("messageCreate", async (message) => {
   if (command === "help" || command === "cmd") {
     return message.reply(
       [
-        "**📜 Danh sách lệnh Music Bot**",
-        "`!cmd` / `!help` - Hiện tất cả lệnh",
-        "`!join` - Bot vào voice channel của bạn",
-        "`!leave` - Bot rời voice và xóa queue",
-        "`!play <link hoặc tên bài>` - Phát SoundCloud / link mp3 / tìm theo tên",
-        "`!pause` - Tạm dừng",
-        "`!resume` - Phát tiếp",
-        "`!skip` - Bỏ qua bài hiện tại",
-        "`!stop` - Dừng nhạc và xóa queue",
-        "`!queue` - Xem hàng chờ",
-        "`!nowplaying` - Xem bài đang phát",
-        "`!loop song|queue|off` - Chế độ lặp",
-        "`!autoplay` - Bật/tắt autoplay"
+        "**📜 Danh sách lệnh Của Bob**",
+        "```!cmd``` / ```!help``` - Lệnh Hỗ Trợ <3",
+        "```!join``` - Bob join vào voice của bạn 🐙",
+        "```!leave``` - Bob rời voice xoá hàng chờ nhạc ☹️",
+        "```!play <link/tên bài chỉ sound cloud>``` - Bob 🐙 Hát :)))",
+        "```!pause``` - Tạm dừng nhạc ▶️",
+        "```!resume``` - Tiếp Tục Phát Nhạc ⏸️",
+        "```!skip``` - Phát Bài Tiếp Theo",
+        "```!stop``` - Dừng Phát Nhạc Và Xoá Hàng Chờ",
+        "```!queue``` - Xem hàng chờ",
+        "```!nowplaying``` - Xem bài đang phát",
+        "```!loop song|queue|off``` - Chế độ lặp lại",
+        "```!autoplay``` - Bật/tắt Tự Động Phát Nhạc"
       ].join("\n")
     );
   }
@@ -397,6 +411,7 @@ client.on("messageCreate", async (message) => {
 
 client.once(Events.ClientReady, () => {
   console.log(`Bot online: ${client.user.tag}`);
+  console.log(generateDependencyReport());
   ensureYtDlp().catch((e) => console.error("Lỗi yt-dlp:", e.message));
 });
 
@@ -410,4 +425,3 @@ if (!TOKEN) {
 }
 
 client.login(TOKEN);
-    
