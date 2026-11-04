@@ -10,6 +10,7 @@
     "@discordjs/voice": "^0.19.2",
     "@snazzah/davey": "^0.1.12",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "libsodium-wrappers": "^0.7.15"
+    "libsodium-wrappers": "^0.7.15",
+    "opusscript": "^0.0.8"
   }
 }
