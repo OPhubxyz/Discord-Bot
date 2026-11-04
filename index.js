@@ -230,7 +230,7 @@ client.on("messageCreate", async (message) => {
   // JOIN
   if (command === "join") {
     if (!memberVoice) {
-      return message.reply("Bạn phải vào voice channel trước.");
+      return message.reply("Bạn phải vào voice channel trước đã nha, Bob 🐙 không biết vào đâu hết á ☹️");
     }
 
     const voiceConnection = joinVoiceChannel({
@@ -241,7 +241,7 @@ client.on("messageCreate", async (message) => {
 
     watchConnection(voiceConnection);
     voiceConnection.subscribe(data.player);
-    return message.reply(`Đã vào voice: **${memberVoice.name}**`);
+    return message.reply(`Bob 🐙 đã vào voice: **${memberVoice.name}** rồi nè <3`);
   }
 
   // LEAVE
@@ -252,7 +252,7 @@ client.on("messageCreate", async (message) => {
     stopFFmpeg(message.guild.id);
     data.player.stop(true);
     if (connection) connection.destroy();
-    return message.reply("Bot đã rời voice.");
+    return message.reply("Bob 🐙 đi ngủ đây, đã rời voice và xoá hàng chờ ☹️");
   }
 
   // PLAY
@@ -260,11 +260,11 @@ client.on("messageCreate", async (message) => {
     const query = args.join(" ").trim();
 
     if (!query) {
-      return message.reply("Dùng: `!play <link SoundCloud / mp3 hoặc tên bài>`");
+      return message.reply("Bob 🐙 chưa biết hát gì hết á, dùng: `!play <link/tên bài sound cloud>` nha :)))");
     }
 
     if (!memberVoice) {
-      return message.reply("Bạn cần vào voice channel trước.");
+      return message.reply("Bạn vào voice channel trước đã nha, Bob 🐙 mới hát được <3");
     }
 
     if (!connection) {
@@ -279,7 +279,7 @@ client.on("messageCreate", async (message) => {
     }
 
     if (BLOCKED_SITES.test(query)) {
-      return message.reply("Bot không hỗ trợ YouTube. Hãy dùng link SoundCloud, link mp3 trực tiếp, hoặc gõ tên bài.");
+      return message.reply("Bob 🐙 không hát nhạc YouTube đâu nha ☹️ Dùng link SoundCloud, link mp3 hoặc gõ tên bài nè <3");
     }
 
     const requestedBy = message.author.username;
@@ -288,13 +288,13 @@ client.on("messageCreate", async (message) => {
     if (/^https?:\/\/\S+\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?\S*)?$/i.test(query)) {
       song = { url: query, title: query, direct: true, requestedBy };
     } else {
-      const searching = await message.reply("🔎 Đang tìm...");
+      const searching = await message.reply("🔎 Bob 🐙 đang tìm bài nè, đợi xíu nha...");
       try {
         const info = await getInfo(query);
         song = { url: info.url, title: info.title, direct: false, requestedBy };
       } catch (e) {
         console.error("getInfo error:", e.message);
-        return searching.edit("Không lấy được bài: " + e.message.slice(0, 300));
+        return searching.edit("Bob 🐙 không lấy được bài này ☹️ Lỗi: " + e.message.slice(0, 300));
       }
     }
 
@@ -302,22 +302,22 @@ client.on("messageCreate", async (message) => {
 
     if (!data.current) {
       playNext(message.guild.id);
-      return message.reply(`🎵 Đang phát: **${song.title}**`);
+      return message.reply(`🎵 Bob 🐙 bắt đầu hát: **${song.title}** :)))`);
     }
 
-    return message.reply(`Đã thêm vào hàng chờ: **${song.title}**`);
+    return message.reply(`Bob 🐙 đã thêm vào hàng chờ: **${song.title}** <3`);
   }
 
   // PAUSE
   if (command === "pause") {
     data.player.pause();
-    return message.reply("Đã tạm dừng.");
+    return message.reply("Bob 🐙 tạm dừng rồi nè ⏸️");
   }
 
   // RESUME
   if (command === "resume") {
     data.player.unpause();
-    return message.reply("Đã phát tiếp.");
+    return message.reply("Bob 🐙 hát tiếp nè ▶️");
   }
 
   // SKIP
@@ -326,7 +326,7 @@ client.on("messageCreate", async (message) => {
     if (data.loop === "song") data.current = null;
     stopFFmpeg(message.guild.id);
     data.player.stop(true);
-    return message.reply("Đã bỏ qua bài.");
+    return message.reply("Bob 🐙 đã bỏ qua bài này, qua bài tiếp nha ⏭️");
   }
 
   // STOP
@@ -336,17 +336,17 @@ client.on("messageCreate", async (message) => {
     data.current = null;
     stopFFmpeg(message.guild.id);
     data.player.stop(true);
-    return message.reply("Đã dừng nhạc và xóa queue.");
+    return message.reply("Bob 🐙 dừng hát và xoá hàng chờ rồi nha ☹️");
   }
 
   // QUEUE
   if (command === "queue") {
     if (!data.current && data.queue.length === 0) {
-      return message.reply("Queue đang trống.");
+      return message.reply("Hàng chờ trống trơn á, thêm bài đi nè :)))");
     }
 
     const current = data.current
-      ? `🎵 Đang phát: ${data.current.title}\n`
+      ? `🎵 Bob 🐙 đang hát: ${data.current.title}\n`
       : "";
 
     const upcoming = data.queue
@@ -354,7 +354,7 @@ client.on("messageCreate", async (message) => {
       .join("\n");
 
     return message.reply(
-      `${current}${upcoming || "Không có bài tiếp theo."}`
+      `${current}${upcoming || "Chưa có bài nào tiếp theo hết <3"}`
     );
   }
 
@@ -362,8 +362,8 @@ client.on("messageCreate", async (message) => {
   if (command === "nowplaying") {
     return message.reply(
       data.current
-        ? `🎵 Đang phát: ${data.current.title}`
-        : "Hiện không có bài nào đang phát."
+        ? `🎵 Bob 🐙 đang hát: ${data.current.title}`
+        : "Bob 🐙 đang rảnh, chưa hát bài nào hết á :)))"
     );
   }
 
@@ -372,6 +372,60 @@ client.on("messageCreate", async (message) => {
     const mode = (args[0] || "song").toLowerCase();
 
     if (["song", "queue", "off"].includes(mode)) {
+      data.loop = mode;
+      return message.reply(`Bob 🐙 đã chỉnh chế độ lặp: **${mode}** <3`);
+    }
+
+    return message.reply("Dùng: `!loop song`, `!loop queue`, `!loop off` nha ☹️");
+  }
+
+  // AUTOPLAY TOGGLE
+  if (command === "autoplay") {
+    data.autoplay = !data.autoplay;
+    return message.reply(
+      `Bob 🐙 đã ${data.autoplay ? "bật" : "tắt"} tự động phát nhạc: **${data.autoplay ? "ON" : "OFF"}**`
+    );
+  }
+
+  // HELP
+  if (command === "help" || command === "cmd") {
+    return message.reply(
+      [
+        "**📜 Danh sách lệnh Của Bob**",
+        "```!cmd``` / ```!help``` - Lệnh Hỗ Trợ <3",
+        "```!join``` - Bob join vào voice của bạn 🐙",
+        "```!leave``` - Bob rời voice xoá hàng chờ nhạc ☹️",
+        "```!play <link/tên bài chỉ sound cloud>``` - Bob 🐙 Hát :)))",
+        "```!pause``` - Tạm dừng nhạc ▶️",
+        "```!resume``` - Tiếp Tục Phát Nhạc ⏸️",
+        "```!skip``` - Phát Bài Tiếp Theo",
+        "```!stop``` - Dừng Phát Nhạc Và Xoá Hàng Chờ",
+        "```!queue``` - Xem hàng chờ",
+        "```!nowplaying``` - Xem bài đang phát",
+        "```!loop song|queue|off``` - Chế độ lặp lại",
+        "```!autoplay``` - Bật/tắt Tự Động Phát Nhạc"
+      ].join("\n")
+    );
+  }
+});
+
+client.once(Events.ClientReady, () => {
+  console.log(`Bot online: ${client.user.tag}`);
+  console.log(generateDependencyReport());
+  ensureYtDlp().catch((e) => console.error("Lỗi yt-dlp:", e.message));
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled rejection:", err);
+});
+
+if (!TOKEN) {
+  console.error("Thiếu biến môi trường BOT_TOKEN!");
+  process.exit(1);
+}
+
+client.login(TOKEN);
+["song", "queue", "off"].includes(mode)) {
       data.loop = mode;
       return message.reply(`Loop mode: **${mode}**`);
     }
