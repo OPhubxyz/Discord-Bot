@@ -343,16 +343,24 @@ client.on("messageCreate", async (message) => {
     if (!target) return message.reply("Tag hoặc nhập ID thành viên cần mute nha.");
     if (target.id === message.author.id) return message.reply("Bạn không thể tự mute mình đâu ☹️");
     if (!target.moderatable) return message.reply("Bob không đủ quyền timeout thành viên này.");
-    // Accept duration formats such as 1, 1m, 10min, or 2h; default to 10 minutes.
-    const durationMatch = /^(\d+)(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?$/i.exec(args[1] || "");
+    // Duration supports seconds/minutes/hours/days. Bare numbers mean minutes; default is 10m.
+    const durationMatch = /^(\d+)(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)?$/i.exec(args[1] || "");
     const hasDuration = Boolean(durationMatch);
     const unit = (durationMatch?.[2] || "m").toLowerCase();
-    const multiplier = unit.startsWith("h") ? 60 : 1;
-    const minutes = hasDuration ? Number(durationMatch[1]) * multiplier : 10;
-    if (minutes < 1 || minutes > 40320) return message.reply("Thời gian mute từ 1 đến 40320 phút (28 ngày) nha.");
+    const multiplierMs = unit.startsWith("s") ? 1000
+      : unit.startsWith("h") ? 60 * 60 * 1000
+      : unit.startsWith("d") ? 24 * 60 * 60 * 1000
+      : 60 * 1000;
+    const durationMs = hasDuration ? Number(durationMatch[1]) * multiplierMs : 10 * 60 * 1000;
+    const minTimeoutMs = 10 * 1000;
+    const maxTimeoutMs = 28 * 24 * 60 * 60 * 1000; // Discord API maximum is 28 days
+    if (durationMs < minTimeoutMs || durationMs > maxTimeoutMs) {
+      return message.reply("Timeout duration must be between 10 seconds and 28 days (Discord's maximum).");
+    }
     const reason = args.slice(hasDuration ? 2 : 1).join(" ") || "No reason provided";
-    await target.timeout(minutes * 60 * 1000, reason.slice(0, 500));
-    return message.reply(`🔇 Đã mute **${target.user.tag}** trong ${minutes} phút. Lý do: ${reason}`);
+    await target.timeout(durationMs, reason.slice(0, 500));
+    const durationLabel = hasDuration ? `${durationMatch[1]}${unit}` : "10m";
+    return message.reply(`🔇 Timed out **${target.user.tag}** for ${durationLabel}. Reason: ${reason}`);
   }
 
   // UNMUTE: !unmute @user
