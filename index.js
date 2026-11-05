@@ -284,8 +284,8 @@ client.on("messageCreate", async (message) => {
   if (command === "clear") {
     if (!requireAdmin()) return;
     const amount = Number(args[0]);
-    if (!Number.isInteger(amount) || amount < 1 || amount > 100) {
-      return message.reply("Dùng `!clear <1-100>` nha.");
+    if (!Number.isInteger(amount) || amount < 1 || amount > 99) {
+      return message.reply("Dùng `!clear <1-99>` nha.");
     }
     const deleted = await message.channel.bulkDelete(amount + 1, true);
     const notice = await message.channel.send(`🧹 Bob đã xoá ${Math.max(0, deleted.size - 1)} tin nhắn.`);
@@ -493,7 +493,7 @@ client.on("messageCreate", async (message) => {
         "```!ban @user [lý do]``` - Ban thành viên",
         "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
         "```!unmute @user``` - Gỡ timeout",
-        "```!clear <1-100>``` - Xoá tin nhắn trong kênh"
+        "```!clear <1-99>``` - Xoá tin nhắn trong kênh"
       ].join("\n")
     );
   }
