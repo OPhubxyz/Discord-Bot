@@ -231,6 +231,68 @@ client.on("messageCreate", async (message) => {
   const memberVoice = message.member?.voice?.channel;
   const connection = getVoiceConnection(message.guild.id);
 
+  // ===== ADMIN MODERATION COMMANDS =====
+  const isAdmin = message.member.permissions.has("Administrator");
+  const requireAdmin = () => {
+    if (!isAdmin) {
+      message.reply("Lệnh này chỉ dành cho Admin server nha ☹️");
+      return false;
+    }
+    return true;
+  };
+
+  // BAN: !ban @user [lý do]
+  if (command === "ban") {
+    if (!requireAdmin()) return;
+    const target = message.mentions.members.first() ||
+      await message.guild.members.fetch(args[0]).catch(() => null);
+    if (!target) return message.reply("Tag hoặc nhập ID thành viên cần ban nha.");
+    if (target.id === message.author.id) return message.reply("Bob không ban chính bạn được đâu ☹️");
+    if (!target.bannable) return message.reply("Bob không đủ quyền ban thành viên này. Kiểm tra role của Bob nha.");
+    const reason = args.slice(1).join(" ") || "Không ghi lý do";
+    await target.ban({ reason: reason.slice(0,  reason.length > 500 ? 500 : reason.length) });
+    return message.reply(`🔨 Đã ban **${target.user.tag}**. Lý do: ${reason}`);
+  }
+
+  // MUTE/TIMEOUT: !mute @user [số phút] [lý do]
+  if (command === "mute") {
+    if (!requireAdmin()) return;
+    const target = message.mentions.members.first() ||
+      await message.guild.members.fetch(args[0]).catch(() => null);
+    if (!target) return message.reply("Tag hoặc nhập ID thành viên cần mute nha.");
+    if (target.id === message.author.id) return message.reply("Bạn không thể tự mute mình đâu ☹️");
+    if (!target.moderatable) return message.reply("Bob không đủ quyền timeout thành viên này.");
+    const minutes = /^\d+$/.test(args[1] || "") ? Number(args[1]) : 10;
+    if (minutes < 1 || minutes > 40320) return message.reply("Thời gian mute từ 1 đến 40320 phút (28 ngày) nha.");
+    const reason = args.slice(/^\d+$/.test(args[1] || "") ? 2 : 1).join(" ") || "Không ghi lý do";
+    await target.timeout(minutes * 60 * 1000, reason.slice(0, 500));
+    return message.reply(`🔇 Đã mute **${target.user.tag}** trong ${minutes} phút. Lý do: ${reason}`);
+  }
+
+  // UNMUTE: !unmute @user
+  if (command === "unmute") {
+    if (!requireAdmin()) return;
+    const target = message.mentions.members.first() ||
+      await message.guild.members.fetch(args[0]).catch(() => null);
+    if (!target) return message.reply("Tag hoặc nhập ID thành viên cần unmute nha.");
+    if (!target.moderatable) return message.reply("Bob không đủ quyền gỡ timeout thành viên này.");
+    await target.timeout(null, "Timeout được gỡ bởi Admin");
+    return message.reply(`🔊 Đã unmute **${target.user.tag}** rồi nha.`);
+  }
+
+  // CLEAR: !clear [số tin]
+  if (command === "clear") {
+    if (!requireAdmin()) return;
+    const amount = Number(args[0]);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 100) {
+      return message.reply("Dùng `!clear <1-100>` nha.");
+    }
+    const deleted = await message.channel.bulkDelete(amount + 1, true);
+    const notice = await message.channel.send(`🧹 Bob đã xoá ${Math.max(0, deleted.size - 1)} tin nhắn.`);
+    setTimeout(() => notice.delete().catch(() => {}), 5000);
+    return;
+  }
+
   // JOIN
   if (command === "join") {
     if (!memberVoice) {
@@ -426,7 +488,12 @@ client.on("messageCreate", async (message) => {
         "```!queue``` - Xem hàng chờ",
         "```!nowplaying``` - Xem bài đang phát",
         "```!loop song|queue|off``` - Chế độ lặp lại",
-        "```!autoplay``` - Bật/tắt Tự Động Phát Nhạc"
+        "```!autoplay``` - Bật/tắt Tự Động Phát Nhạc",
+        " **🛡️ Lệnh Admin**",
+        "```!ban @user [lý do]``` - Ban thành viên",
+        "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
+        "```!unmute @user``` - Gỡ timeout",
+        "```!clear <1-100>``` - Xoá tin nhắn trong kênh"
       ].join("\n")
     );
   }
