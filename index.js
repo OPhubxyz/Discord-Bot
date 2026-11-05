@@ -480,10 +480,14 @@ client.on("messageCreate", async (message) => {
       return message.reply("Bob 🐙 chưa có bài nào để bỏ qua hết á ☹️");
     }
     data.loop = "off";
+    const wasPlaying = Boolean(data.current);
     data.current = null;
     stopFFmpeg(message.guild.id);
-    data.player.stop(true);
-    if (data.player.state.status === AudioPlayerStatus.Idle) playNext(message.guild.id);
+    if (wasPlaying) {
+      data.player.stop(true); // Idle event tự chuyển sang bài tiếp
+    } else {
+      playNext(message.guild.id); // Player đang Idle, không có bài hiện tại
+    }
     return message.reply("Bob 🐙 đã bỏ qua bài này, qua bài tiếp nha ⏭️");
   }
 
