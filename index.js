@@ -580,12 +580,12 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  // NOW PLAYING
+  // NOW PLAYING — show only the track title, without the "Now playing:" label.
   if (command === "nowplaying") {
     return message.reply(
       data.current
-        ? `🎵 Bob 🐙 đang hát: ${data.current.title}`
-        : "Bob 🐙 đang rảnh, chưa hát bài nào hết á :)))"
+        ? `🎵 **${data.current.title}**`
+        : "No track is currently playing."
     );
   }
 
@@ -595,7 +595,13 @@ client.on("messageCreate", async (message) => {
 
     if (["song", "queue", "off"].includes(mode)) {
       data.loop = mode;
-      return message.reply(`Bob 🐙 đã chỉnh chế độ lặp: **${mode}** <3`);
+      if (mode === "song" && data.current) {
+        return message.reply(`🔁 Looping track: **${data.current.title}**`);
+      }
+      if (mode === "queue" && data.current) {
+        return message.reply(`🔁 Looping the queue. Current track: **${data.current.title}**`);
+      }
+      return message.reply(mode === "off" ? "🔁 Loop mode turned off." : "🔁 Loop mode set to song.");
     }
 
     return message.reply("Dùng: `!loop song`, `!loop queue`, `!loop off` nha ☹️");
