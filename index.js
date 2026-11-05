@@ -415,7 +415,7 @@ client.on("messageCreate", async (message) => {
     }
 
     await message.delete().catch(() => {});
-    const notice = await message.channel.send(`🧹 Bob đã xử lý xoá ${deletedCount} tin nhắn nha.`);
+    const notice = await message.channel.send({ embeds: [new EmbedBuilder().setColor(0x57F287).setTitle("Bob • Command Menu").addFields({ name: "**Message**", value: `Deleted ${deletedCount} messages.` })] });
     setTimeout(() => notice.delete().catch(() => {}), 8000);
     return;
   }
@@ -479,7 +479,7 @@ client.on("messageCreate", async (message) => {
     let song;
     const searchingEmbed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setDescription("**Bob 🐙 đang tìm bài hát...** <a:bobsearch:1567556819155419187>\nĐợi Bob một xíu nha <3");
+      .setDescription("**Searching for a track...** <a:bobsearch:1567556819155419187>\nPlease wait.");
     const searching = await message.reply({ embeds: [searchingEmbed] });
 
     if (/^https?:\/\/\S+\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?\S*)?$/i.test(query)) {
@@ -500,11 +500,11 @@ client.on("messageCreate", async (message) => {
       .setColor(0x57F287)
       .setTitle("🎵 " + song.title.slice(0, 250))
       .addFields(
-        { name: "🎤 Tên tác giả", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
-        { name: "💗 Yêu thích", value: song.likes == null ? "Không rõ" : String(song.likes), inline: true },
-        { name: "💬 Bình luận", value: song.comments == null ? "Không rõ" : String(song.comments), inline: true }
+        { name: "🎤 Artist", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
+        { name: "💗 Likes", value: song.likes == null ? "Không rõ" : String(song.likes), inline: true },
+        { name: "💬 Comments", value: song.comments == null ? "Không rõ" : String(song.comments), inline: true }
       )
-      .setFooter({ text: "Bob 🐙 • Yêu cầu bởi " + requestedBy });
+      .setFooter({ text: "Bob • Requested by " + requestedBy });
     if (song.thumbnail && /^https?:\/\//i.test(song.thumbnail)) {
       resultEmbed.setThumbnail(song.thumbnail);
     }
@@ -612,24 +612,24 @@ client.on("messageCreate", async (message) => {
   if (command === "help" || command === "cmd") {
     return message.reply(
       [
-        "**📜 Danh sách lệnh Của Bob**",
-        "```!cmd``` / ```!help``` - Lệnh Hỗ Trợ <3",
-        "```!join``` - Bob join vào voice của bạn 🐙",
-        "```!leave``` - Bob rời voice xoá hàng chờ nhạc ☹️",
-        "```!play <link/tên bài chỉ sound cloud>``` - Bob 🐙 Hát :)))",
-        "```!pause``` - Tạm dừng nhạc ▶️",
-        "```!resume``` - Tiếp Tục Phát Nhạc ⏸️",
-        "```!skip``` - Phát Bài Tiếp Theo",
-        "```!stop``` - Dừng Phát Nhạc Và Xoá Hàng Chờ",
-        "```!queue``` - Xem hàng chờ",
-        "```!nowplaying``` - Xem bài đang phát",
-        "```!loop song|queue|off``` - Chế độ lặp lại",
-        "```!autoplay``` - Bật/tắt Tự Động Phát Nhạc",
-        " **🛡️ Lệnh Admin**",
-        "```!ban @user [lý do]``` - Ban thành viên",
-        "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
-        "```!unmute @user``` - Gỡ timeout",
-        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",
+        "**📜 Bob Command Menu**",
+        "```!cmd``` / ```!help``` - Show command help",
+        "```!join``` - Join your voice channel",
+        "```!leave``` - Leave voice and clear the queue",
+        "```!play <SoundCloud link/song title>``` - Play a track",
+        "```!pause``` - Pause playback",
+        "```!resume``` - Resume playback",
+        "```!skip``` - Skip the current track",
+        "```!stop``` - Stop playback and clear the queue",
+        "```!queue``` - View the queue",
+        "```!nowplaying``` - View the current track",
+        "```!loop song|queue|off``` - Set repeat mode",
+        "```!autoplay``` - Toggle autoplay",
+        "**🛡️ Admin Commands**",
+        "```!ban @user [reason]``` - Ban a member",
+        "```!mute @user [minutes] [reason]``` - Timeout a member (default: 10 minutes)",
+        "```!unmute @user``` - Remove a timeout",
+        "```!purge <1-1000>``` - Delete up to 1,000 messages (including older messages)",
 
       ].join("\n")
     );
