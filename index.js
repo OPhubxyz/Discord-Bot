@@ -250,12 +250,70 @@ function stopFFmpeg(guildId) {
   }
 }
 
+// Standard English response embed for command messages
+function commandResponseEmbed(text) {
+  const raw = String(text);
+  const translations = [
+    ["Lệnh này chỉ dành cho Admin server nha ☹️", "This command is restricted to server administrators."],
+    ["Tag hoặc nhập ID thành viên cần ban nha.", "Please mention or provide the ID of the member to ban."],
+    ["Bob không ban chính bạn được đâu ☹️", "You cannot ban yourself."],
+    ["Bob không đủ quyền ban thành viên này. Kiểm tra role của Bob nha.", "I cannot ban this member. Please check my role permissions."],
+    ["Tag hoặc nhập ID thành viên cần mute nha.", "Please mention or provide the ID of the member to mute."],
+    ["Bạn không thể tự mute mình đâu ☹️", "You cannot timeout yourself."],
+    ["Bob không đủ quyền timeout thành viên này.", "I do not have permission to timeout this member."],
+    ["Tag hoặc nhập ID thành viên cần unmute nha.", "Please mention or provide the ID of the member to unmute."],
+    ["Bob không đủ quyền gỡ timeout thành viên này.", "I do not have permission to remove this member's timeout."],
+    ["Tag hoặc nhập ID thành viên cần ban nha.", "Please mention or provide the ID of the member to ban."],
+    ["Bạn phải vào voice channel trước đã nha, Bob 🐙 không biết vào đâu hết á ☹️", "Please join a voice channel first."],
+    ["Bạn vào voice channel trước đã nha, Bob 🐙 mới hát được <3", "Please join a voice channel before requesting playback."],
+    ["Bob 🐙 không hát nhạc YouTube đâu nha ☹️ Dùng link SoundCloud, link mp3 hoặc gõ tên bài nè <3", "YouTube is not supported. Use a SoundCloud link, an MP3 link, or search by song title."],
+    ["Bob 🐙 chưa biết hát gì hết á, dùng: `!play <link/tên bài sound cloud>` nha :)))", "Please provide a SoundCloud link or song title: `!play <link/song title>`."],
+    ["Bob 🐙 chưa có bài nào để bỏ qua hết á ☹️", "There is no track to skip."],
+    ["Hàng chờ trống trơn á, thêm bài đi nè :)))", "The queue is empty. Add a track to get started."],
+    ["Bob 🐙 tạm dừng rồi nè ⏸️", "Playback has been paused."],
+    ["Bob 🐙 hát tiếp nè ▶️", "Playback has resumed."],
+    ["Bob 🐙 dừng hát và xoá hàng chờ rồi nha ☹️", "Playback stopped and the queue has been cleared."],
+    ["Bob 🐙 đi ngủ đây, đã rời voice và xoá hàng chờ ☹️", "Disconnected from voice and cleared the queue."],
+    ["Bob 🐙 đã bỏ qua bài này, qua bài tiếp nha ⏭️", "Skipped the current track."],
+    ["Dùng: `!loop song`, `!loop queue`, `!loop off` nha ☹️", "Usage: `!loop song`, `!loop queue`, or `!loop off`."],
+    ["Bob 🐙 đang rảnh, chưa hát bài nào hết á :)))", "No track is currently playing."],
+    ["Bob 🐙 không tìm được bài này ☹️", "I could not find that track."],
+  ];
+  let message = raw;
+  for (const [vi, en] of translations) message = message.replace(vi, en);
+  message = message
+    .replace(/Bob 🐙 đã vào voice: \*\*(.*?)\*\* rồi nè <3/, "Connected to voice channel: **$1**.")
+    .replace(/🎵 Bob 🐙 bắt đầu hát: \*\*(.*?)\*\* :\)\)/, "Now playing: **$1**.")
+    .replace(/Bob 🐙 đã thêm vào hàng chờ: \*\*(.*?)\*\* <3/, "Added to queue: **$1**.")
+    .replace(/🎵 Bob 🐙 đang hát: (.*)/, "Now playing: $1")
+    .replace(/Bob 🐙 đã mute \*\*(.*?)\*\* trong (\d+) phút\. Lý do: (.*)/, "Timed out **$1** for $2 minutes. Reason: $3")
+    .replace(/🔊 Đã unmute \*\*(.*?)\*\* rồi nha\./, "Removed timeout for **$1**.")
+    .replace(/🔨 Đã ban \*\*(.*?)\*\*\. Lý do: (.*)/, "Banned **$1**. Reason: $2")
+    .replace(/Bob 🐙 đã chỉnh chế độ lặp: \*\*(.*?)\*\* <3/, "Loop mode set to **$1**.")
+    .replace(/Bob 🐙 đã (bật|tắt) tự động phát nhạc: \*\*(ON|OFF)\*\*/, "Autoplay **$2**.")
+    .replace(/Dùng `!purge <1-1000>` nha\./, "Usage: `!purge <1-1000>`.")
+    .replace(/Thời gian mute từ 1 đến 40320 phút \(28 ngày\) nha\./, "Timeout duration must be between 1 and 40,320 minutes (28 days).");
+  const lower = raw.toLowerCase();
+  const fail = /không đủ quyền|không tìm|chưa có bài|chưa biết|không thể|phải vào|dùng:|thời gian mute|tag hoặc nhập|youtube/i.test(lower);
+  const inProgress = /đang tìm|đợi bob/i.test(lower);
+  const color = fail ? 0xED4245 : inProgress ? 0xFEE75C : 0x57F287;
+  return new EmbedBuilder()
+    .setColor(color)
+    .setTitle("Bob • Command Menu")
+    .addFields({ name: "**Message**", value: message.slice(0, 4000) });
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
   if (!message.content.startsWith(PREFIX)) return;
 
   const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
   const command = args.shift()?.toLowerCase();
+
+  const originalReply = message.reply.bind(message);
+  message.reply = (payload, options) => typeof payload === "string"
+    ? originalReply({ embeds: [commandResponseEmbed(payload)] }, options)
+    : originalReply(payload, options);
 
   const data = getMusic(message.guild.id);
   const memberVoice = message.member?.voice?.channel;
