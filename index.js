@@ -443,7 +443,8 @@ client.on("messageCreate", async (message) => {
       .setTitle("🎵 " + song.title.slice(0, 250))
       .addFields(
         { name: "🎤 Tên tác giả", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
-        { name: "💗 Yêu thích", value: song.likes == null ? "Không rõ" : String(song.likes), inline: true },\n        { name: "💬 Bình luận", value: song.comments == null ? "Không rõ" : String(song.comments), inline: true }
+        { name: "💗 Yêu thích", value: song.likes == null ? "Không rõ" : String(song.likes), inline: true },
+        { name: "💬 Bình luận", value: song.comments == null ? "Không rõ" : String(song.comments), inline: true }
       )
       .setFooter({ text: "Bob 🐙 • Yêu cầu bởi " + requestedBy });
     if (song.thumbnail && /^https?:\/\//i.test(song.thumbnail)) {
