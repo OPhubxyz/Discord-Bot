@@ -343,9 +343,14 @@ client.on("messageCreate", async (message) => {
     if (!target) return message.reply("Tag hoặc nhập ID thành viên cần mute nha.");
     if (target.id === message.author.id) return message.reply("Bạn không thể tự mute mình đâu ☹️");
     if (!target.moderatable) return message.reply("Bob không đủ quyền timeout thành viên này.");
-    const minutes = /^\d+$/.test(args[1] || "") ? Number(args[1]) : 10;
+    // Accept duration formats such as 1, 1m, 10min, or 2h; default to 10 minutes.
+    const durationMatch = /^(\d+)(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?$/i.exec(args[1] || "");
+    const hasDuration = Boolean(durationMatch);
+    const unit = (durationMatch?.[2] || "m").toLowerCase();
+    const multiplier = unit.startsWith("h") ? 60 : 1;
+    const minutes = hasDuration ? Number(durationMatch[1]) * multiplier : 10;
     if (minutes < 1 || minutes > 40320) return message.reply("Thời gian mute từ 1 đến 40320 phút (28 ngày) nha.");
-    const reason = args.slice(/^\d+$/.test(args[1] || "") ? 2 : 1).join(" ") || "Không ghi lý do";
+    const reason = args.slice(hasDuration ? 2 : 1).join(" ") || "No reason provided";
     await target.timeout(minutes * 60 * 1000, reason.slice(0, 500));
     return message.reply(`🔇 Đã mute **${target.user.tag}** trong ${minutes} phút. Lý do: ${reason}`);
   }
@@ -408,7 +413,7 @@ client.on("messageCreate", async (message) => {
     }
 
     await message.delete().catch(() => {});
-    const notice = await message.channel.send({ embeds: [new EmbedBuilder().setColor(0x57F287).setTitle("Bob • Command Menu").addFields({ name: "**Message**", value: `Deleted ${deletedCount} messages.` })] });
+    const notice = await message.channel.send({ embeds: [new EmbedBuilder().setColor(0x57F287).setDescription(`**Deleted ${deletedCount} messages.**`)] });
     setTimeout(() => notice.delete().catch(() => {}), 8000);
     return;
   }
@@ -485,16 +490,13 @@ client.on("messageCreate", async (message) => {
         console.error("getInfo error:", e.message);
         return searching.edit({ embeds: [new EmbedBuilder()
           .setColor(0xED4245)
-          .setDescription("Bob 🐙 không tìm được bài này ☹️\nLỗi: " + e.message.slice(0, 300))] });
+          .setDescription("**Could not find this track.\nError: " + e.message.slice(0, 300) + "**")] });
       }
     }
 
     const resultEmbed = new EmbedBuilder()
       .setColor(0x57F287)
-      .setTitle("🎵 " + song.title.slice(0, 250))
-      .addFields(
-        { name: "🎤 Artist", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
-      )
+      .setDescription("**🎵 " + song.title.slice(0, 250) + "**\n\n**" + String(song.artist || "Unknown artist").slice(0, 1020) + "**")
       .setFooter({ text: "Bob • Requested by " + requestedBy });
     if (song.thumbnail && /^https?:\/\//i.test(song.thumbnail)) {
       resultEmbed.setThumbnail(song.thumbnail);
