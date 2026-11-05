@@ -532,7 +532,8 @@ client.on("messageCreate", async (message) => {
         "```!ban @user [lý do]``` - Ban thành viên",
         "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
         "```!unmute @user``` - Gỡ timeout",
-        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",\n
+        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",
+
       ].join("\n")
     );
   }
