@@ -281,7 +281,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // PURGE/CLEAR: !purge [số tin] — tối đa 1000, gồm cả tin cũ hơn 14 ngày
-  if (command === "purge" || command === "clear") {
+  if (command === "purge") {
     if (!requireAdmin()) return;
     const amount = Number(args[0]);
     if (!Number.isInteger(amount) || amount < 1 || amount > 1000) {
@@ -532,7 +532,7 @@ client.on("messageCreate", async (message) => {
         "```!ban @user [lý do]``` - Ban thành viên",
         "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
         "```!unmute @user``` - Gỡ timeout",
-        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",\n        "```!clear <1-1000>``` - Alias của purge"
+        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",\n
       ].join("\n")
     );
   }
