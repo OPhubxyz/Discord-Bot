@@ -280,16 +280,55 @@ client.on("messageCreate", async (message) => {
     return message.reply(`🔊 Đã unmute **${target.user.tag}** rồi nha.`);
   }
 
-  // CLEAR: !clear [số tin]
-  if (command === "clear") {
+  // PURGE/CLEAR: !purge [số tin] — tối đa 1000, gồm cả tin cũ hơn 14 ngày
+  if (command === "purge" || command === "clear") {
     if (!requireAdmin()) return;
     const amount = Number(args[0]);
-    if (!Number.isInteger(amount) || amount < 1 || amount > 99) {
-      return message.reply("Dùng `!clear <1-99>` nha.");
+    if (!Number.isInteger(amount) || amount < 1 || amount > 1000) {
+      return message.reply("Dùng `!purge <1-1000>` nha.");
     }
-    const deleted = await message.channel.bulkDelete(amount + 1, true);
-    const notice = await message.channel.send(`🧹 Bob đã xoá ${Math.max(0, deleted.size - 1)} tin nhắn.`);
-    setTimeout(() => notice.delete().catch(() => {}), 5000);
+
+    const collected = [];
+    let before;
+    while (collected.length < amount) {
+      const batch = await message.channel.messages.fetch({
+        limit: Math.min(100, amount - collected.length),
+        ...(before ? { before } : {})
+      });
+      if (batch.size === 0) break;
+
+      const eligible = [...batch.values()].filter((msg) => msg.id !== message.id);
+      collected.push(...eligible);
+      before = batch.last()?.id;
+      if (!before || batch.size < Math.min(100, amount - collected.length + eligible.length)) break;
+    }
+
+    const selected = collected.slice(0, amount);
+    const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - fourteenDays;
+    const recent = selected.filter((msg) => msg.createdTimestamp > cutoff);
+    const old = selected.filter((msg) => msg.createdTimestamp <= cutoff);
+
+    let deletedCount = 0;
+    for (let i = 0; i < recent.length; i += 100) {
+      const group = recent.slice(i, i + 100);
+      if (group.length >= 2) {
+        const result = await message.channel.bulkDelete(group, true);
+        deletedCount += result.size;
+      } else if (group.length === 1) {
+        await group[0].delete().catch(() => null);
+        deletedCount += 1;
+      }
+    }
+
+    for (const msg of old) {
+      await msg.delete().catch(() => null);
+      deletedCount += 1;
+    }
+
+    await message.delete().catch(() => {});
+    const notice = await message.channel.send(`🧹 Bob đã xử lý xoá ${deletedCount} tin nhắn nha.`);
+    setTimeout(() => notice.delete().catch(() => {}), 8000);
     return;
   }
 
@@ -493,7 +532,7 @@ client.on("messageCreate", async (message) => {
         "```!ban @user [lý do]``` - Ban thành viên",
         "```!mute @user [phút] [lý do]``` - Timeout thành viên (mặc định 10 phút)",
         "```!unmute @user``` - Gỡ timeout",
-        "```!clear <1-99>``` - Xoá tin nhắn trong kênh"
+        "```!purge <1-1000>``` - Xoá tối đa 1000 tin (kể cả tin cũ)",\n        "```!clear <1-1000>``` - Alias của purge"
       ].join("\n")
     );
   }
