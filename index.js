@@ -290,7 +290,7 @@ client.on("messageCreate", async (message) => {
     let song;
     const searchingEmbed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setDescription("<:bobsearch:1567556819155419187> **Bob 🐙 đang tìm bài hát...**\nĐợi Bob một xíu nha <3");
+      .setDescription("**Bob 🐙 đang tìm bài hát...** <a:bobsearch:1567556819155419187>\nĐợi Bob một xíu nha <3");
     const searching = await message.reply({ embeds: [searchingEmbed] });
 
     if (/^https?:\/\/\S+\.(mp3|ogg|wav|m4a|aac|flac|opus)(\?\S*)?$/i.test(query)) {
