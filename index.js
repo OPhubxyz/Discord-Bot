@@ -125,17 +125,47 @@ function getMusic(guildId) {
       ytdlp: null
     });
 
-    player.on(AudioPlayerStatus.Idle, () => {
+    player.on(AudioPlayerStatus.Idle, async () => {
       const data = music.get(guildId);
       if (!data) return;
 
-      if (data.loop === "song" && data.current) {
-        data.queue.unshift(data.current);
-      } else if (data.loop === "queue" && data.current) {
-        data.queue.push(data.current);
+      const finished = data.current;
+      if (data.loop === "song" && finished) {
+        data.queue.unshift(finished);
+      } else if (data.loop === "queue" && finished) {
+        data.queue.push(finished);
       }
 
       data.current = null;
+      if (data.queue.length === 0 && data.autoplay && finished && !finished.direct) {
+        try {
+          const query = `scsearch5:${finished.artist || ""} similar to ${finished.title || ""}`;
+          const info = await new Promise((resolve, reject) => {
+            execFile(YTDLP_PATH, ytdlpArgs(["--dump-single-json", query]),
+              { timeout: 45000, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
+                if (err) return reject(new Error((stderr || err.message).split("\\n").filter(Boolean).pop()));
+                try {
+                  const result = JSON.parse(stdout);
+                  const entries = result.entries || [result];
+                  const next = entries.find((entry) => entry && entry.webpage_url && entry.webpage_url !== finished.url);
+                  if (!next) return reject(new Error("Không tìm được bài gợi ý"));
+                  resolve(next);
+                } catch (e) { reject(e); }
+              });
+          });
+          data.queue.push({
+            url: info.webpage_url,
+            title: info.title || "Bài gợi ý",
+            artist: info.artist || info.creator || info.uploader || "Không rõ tác giả",
+            thumbnail: info.thumbnail || null,
+            direct: false,
+            requestedBy: "Bob Autoplay"
+          });
+          console.log("Autoplay queued:", info.title);
+        } catch (e) {
+          console.error("Autoplay search failed:", e.message);
+        }
+      }
       playNext(guildId);
     });
 
@@ -399,7 +429,7 @@ client.on("messageCreate", async (message) => {
     } else {
       try {
         const info = await getInfo(query);
-        song = { url: info.url, title: info.title, artist: info.artist, thumbnail: info.thumbnail, direct: false, requestedBy };
+        song = { url: info.url, title: info.title, artist: info.artist, thumbnail: info.thumbnail, likes: info.likes, comments: info.comments, direct: false, requestedBy };
       } catch (e) {
         console.error("getInfo error:", e.message);
         return searching.edit({ embeds: [new EmbedBuilder()
@@ -413,7 +443,7 @@ client.on("messageCreate", async (message) => {
       .setTitle("🎵 " + song.title.slice(0, 250))
       .addFields(
         { name: "🎤 Tên tác giả", value: String(song.artist || "Không rõ tác giả").slice(0, 1024), inline: true },
-        { name: "💗 Tim", value: "❤️", inline: true }
+        { name: "💗 Yêu thích", value: song.likes == null ? "Không rõ" : String(song.likes), inline: true },\n        { name: "💬 Bình luận", value: song.comments == null ? "Không rõ" : String(song.comments), inline: true }
       )
       .setFooter({ text: "Bob 🐙 • Yêu cầu bởi " + requestedBy });
     if (song.thumbnail && /^https?:\/\//i.test(song.thumbnail)) {
@@ -446,10 +476,14 @@ client.on("messageCreate", async (message) => {
 
   // SKIP
   if (command === "skip") {
-    // Tạm tắt loop bài hiện tại để skip thật sự bỏ qua
-    if (data.loop === "song") data.current = null;
+    if (!data.current && data.queue.length === 0) {
+      return message.reply("Bob 🐙 chưa có bài nào để bỏ qua hết á ☹️");
+    }
+    data.loop = "off";
+    data.current = null;
     stopFFmpeg(message.guild.id);
     data.player.stop(true);
+    if (data.player.state.status === AudioPlayerStatus.Idle) playNext(message.guild.id);
     return message.reply("Bob 🐙 đã bỏ qua bài này, qua bài tiếp nha ⏭️");
   }
 
